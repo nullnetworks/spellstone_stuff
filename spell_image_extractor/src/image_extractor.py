@@ -1,11 +1,10 @@
 from PIL import Image
-import glob
 import DDSImagePlugin #importing this allows pil to handle DDS images
+import glob
 import json
-img_w = 231
-img_h = 330
+import os
 
-def v(i, x, y, bgcolor, card_w, card_h):
+def check_for_card(i, x, y, bgcolor, card_w, card_h):
     iw, ih = i.size
     if x + min(card_h, card_w) > iw or y + min(card_h, card_w) > ih:
         return 0
@@ -13,7 +12,7 @@ def v(i, x, y, bgcolor, card_w, card_h):
         if (i.getpixel((x, y))[3] + 
             i.getpixel((x + 1, y))[3] + 
             i.getpixel((x, y + 1))[3]) == 0 and i.getpixel((x + 1, y + 1))[3] > 0:
-            # found bottom left corner
+            # found top left corner
             if x + card_w + 1 < iw and y + card_h + 1 < ih and (
                 i.getpixel((x + card_w + 1, y + card_h + 1))[3] +
                 i.getpixel((x + card_w, y + card_h + 1))[3] +
@@ -31,7 +30,7 @@ def v(i, x, y, bgcolor, card_w, card_h):
         if (sum(i.getpixel((x, y))[:3]) +
             sum(i.getpixel((x + 1, y))[:3]) +
             sum(i.getpixel((x, y + 1))[:3])) < 20 and sum(i.getpixel((x + 1, y + 1))[:3]) > 40: 
-            # found bottom left corner
+            # found top left corner
             if x + card_w + 1 < iw and y + card_h + 1 < ih and (
                 sum(i.getpixel((x + card_w + 1, y + card_h + 1))[:3]) +
                 sum(i.getpixel((x + card_w, y + card_h + 1))[:3]) +
@@ -56,7 +55,7 @@ def split(fname, bundle, card_w=231, card_h=330):
     for y in range(height - min(card_w, card_h)):
         x = 0
         while x < width - min(card_w, card_h):
-            orientation = v(img, x, y, bgcolor, card_w, card_h)
+            orientation = check_for_card(img, x, y, bgcolor, card_w, card_h)
             if orientation == 1:
                 subimg = img.crop((x + 1, y + 1, x + card_w + 1, y + card_h + 1))
                 subimg_rot = subimg.transpose(Image.ROTATE_180)
@@ -74,28 +73,28 @@ def split(fname, bundle, card_w=231, card_h=330):
             else:
                 x += 1
 
-bundle_lookup = dict()
-apiphp_file = open('apiphp.json')
-asset_bundles = json.load(apiphp_file)
-apiphp_file.close()
-#add in resources from main unity3d file
-bundle_lookup['resources'] = '0'
-for bundle in asset_bundles.values():
-    bundle_lookup[bundle['bundle_name'].rsplit('.', 1)[0]] = bundle['id']
-
-
-atlases = glob.glob('data/*/Texture2D/atlas*.dds')
-#add in resources path
-atlases.extend(glob.glob('data/*/*/Texture2D/atlas*.dds'))
-for atlas in atlases:
-    print 'starting ' + atlas,
-    if 'resources' in atlas:
-        card_w = 280
-        card_h = 400
-    else:
-        card_w = 231
-        card_h = 330
-    split(atlas, bundle_lookup[atlas.split('\\', 3)[1]], card_w, card_h)
-    print '. . . finished.'
-
-print img_num, ' images saved' 
+if __name__ == '__main__':
+    apiphp_file = open('apiphp.json')
+    asset_bundles = json.load(apiphp_file)
+    apiphp_file.close()
+    bundle_lookup = dict()
+    for bundle in asset_bundles.values():
+        bundle_lookup[bundle['bundle_name'].rsplit('.', 1)[0]] = bundle['id']
+    atlases = glob.glob('data/*/Texture2D/atlas*.dds')
+    #add reference to internal resources.assets as asset_bundle 0
+    bundle_lookup['resources'] = '0'
+    atlases.extend(glob.glob('data/*/*/Texture2D/atlas*.dds'))
+    if not os.path.exists('images'): os.mkdir('images')
+    for atlas in atlases:
+        print 'starting ' + atlas,
+        if 'resources' in atlas: #card images from the main game files are 280x400
+            card_w = 280
+            card_h = 400
+        else:
+            card_w = 231
+            card_h = 330
+        split(atlas, bundle_lookup[atlas.split('\\', 3)[1]], card_w, card_h)
+        print '. . . finished.'
+    
+    print img_num, ' images saved' 
+    

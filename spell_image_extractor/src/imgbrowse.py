@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 from Tkinter import *
 from PIL import Image, ImageTk
-import shutil
-import os
 import glob
+import os
+import shutil
 import xml.etree.ElementTree as ET
-import Tkinter
 
 class Viewer:
     def __init__(self, master, filelist, namelist):
@@ -105,13 +104,12 @@ class Viewer:
         self.nextframe(0)
         self.listbox.selection_set(box_line_num)
 
-# --------------------------------------------------------------------
 if __name__ == "__main__":
     cards_xml = ET.parse('data/cards.xml')
     units = cards_xml.find('.').findall('unit')
-    print units
     bundled = []
     pic_names = []
+    if not os.path.exists('named_images'): os.mkdir('named_images')
     for unit in units:
         ab = unit.find('asset_bundle')
         if unit.find('picture') is not None and os.path.exists('named_images/' + unit.find('picture').text + '.png'):

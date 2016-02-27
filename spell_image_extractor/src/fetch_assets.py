@@ -2,9 +2,7 @@ import json
 import urllib2
 import glob
 import os
-# REQUIRES YOU TO STRIP OUT THE RESPONSE TO API.PHP IN FIREFOX 
-# AND JUST LEAVE THE ASSET BUNDLE SECTION.
-# After fetching, youll need to run extract_assets.bat from the command line
+
 apiphp_file = open('apiphp.json')
 asset_urls = json.load(apiphp_file)
 apiphp_file.close()
